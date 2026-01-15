@@ -6,8 +6,10 @@ import librosa
 import joblib
 
 # Load model and scaler
-model = joblib.load("svm_model.pkl")
-scaler = joblib.load("scaler.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model = joblib.load(os.path.join(BASE_DIR, "svm_model.pkl"))
+scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
+
 
 FEATURE_COLUMNS = (
         [f"mfcc_mean_{i+1}" for i in range(13)] +
