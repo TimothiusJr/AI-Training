@@ -1,13 +1,21 @@
 import sys
 import os
 import numpy as np
+import pandas as pd
 import librosa
 import joblib
-from sklearn.preprocessing import StandardScaler
 
-# Load the model and scaler
+# Load model and scaler
 model = joblib.load("svm_model.pkl")
-scaler = joblib.load("scaler.pkl") if os.path.exists("scaler.pkl") else None
+scaler = joblib.load("scaler.pkl")
+
+FEATURE_COLUMNS = (
+        [f"mfcc_mean_{i+1}" for i in range(13)] +
+        [f"mfcc_std_{i+1}" for i in range(13)] +
+        ["zcr", "rms", "spectral_centroid"]
+)
+
+LABEL_MAP = {0: "healthy", 1: "impaired"}
 
 def extract_features(file_path):
     y, sr = librosa.load(file_path, sr=None)
@@ -15,11 +23,12 @@ def extract_features(file_path):
     mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
     mfccs_mean = np.mean(mfccs, axis=1)
     mfccs_std = np.std(mfccs, axis=1)
+
     zcr = np.mean(librosa.feature.zero_crossing_rate(y)[0])
     rms = np.mean(librosa.feature.rms(y=y)[0])
-    centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)[0])
+    spectral_centroid = np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)[0])
 
-    return np.concatenate([mfccs_mean, mfccs_std, [zcr, rms, centroid]])
+    return np.concatenate([mfccs_mean, mfccs_std, [zcr, rms, spectral_centroid]])
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -31,14 +40,20 @@ if __name__ == "__main__":
         print("❌ File not found:", wav_file)
         sys.exit(1)
 
-    # Extract and scale features
-    features = extract_features(wav_file).reshape(1, -1)
-    if scaler:
-        features = scaler.transform(features)
+    # Extract features
+    features = extract_features(wav_file)
+    feature_df = pd.DataFrame([features], columns=FEATURE_COLUMNS)
+
+    # Scale
+    features_scaled = scaler.transform(feature_df)
 
     # Predict
-    prediction = model.predict(features)[0]
-    label_map = {0: "healthy", 1: "impaired"}
-    print(f"🧠 Predicted: {label_map.get(prediction, 'unknown')}")
+    prediction = model.predict(features_scaled)[0]
+    probabilities = model.predict_proba(features_scaled)[0]
 
-    
+    confidence = probabilities[prediction]
+
+    print(
+        f"🧠 Predicted: {LABEL_MAP[prediction]} "
+        f"(confidence: {confidence:.2f})"
+    )

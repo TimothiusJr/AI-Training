@@ -27,7 +27,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 
 # Train SVM
-clf = SVC(kernel='rbf', C=1.0, gamma='scale')
+clf = SVC(kernel='rbf', C=1.0, gamma='scale', probability=True)
 clf.fit(X_train, y_train)
 
 # Evaluate
