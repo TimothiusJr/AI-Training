@@ -1,0 +1,21 @@
+# IDE
+.idea/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+features.csv
+*.pkl
+
+# Node (API only)
+api/node_modules/
+api/uploads/
+
+# Database
+api/predictions.db
+
+# Root Node artifacts (remove if accidentally created)
+node_modules/
+package.json
+package-lock.json
